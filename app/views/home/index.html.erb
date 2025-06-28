@@ -1,0 +1,48 @@
+<div class="auth0-header">
+  <h1>🔐 Auth0 + Rails 8.0 Sample</h1>
+  <p>このアプリケーションはAuth0のOpenID Connectを使用した認証のサンプルです。</p>
+  <p><strong>Rails <%= Rails.version %> & Ruby <%= RUBY_VERSION %></strong>で動作しています。</p>
+</div>
+
+<% if logged_in? %>
+  <div class="user-info success">
+    <h3>✅ ログイン済み</h3>
+    <p>ようこそ、<strong><%= current_user['info']['name'] %></strong>さん！</p>
+    <p><small>プロバイダー: <%= current_user['provider'] %></small></p>
+  </div>
+  
+  <div class="action-buttons">
+    <%= link_to "📊 ダッシュボードへ", dashboard_path, class: "btn btn-primary" %>
+    <%= link_to "🚪 ログアウト", logout_path, class: "btn btn-danger" %>
+  </div>
+<% else %>
+  <div class="login-section">
+    <h3>🔑 ログインが必要です</h3>
+    <p>Auth0のOpenID Connectでセキュアにログインしてください。</p>
+    <%= link_to "🔐 Auth0でログイン", "/auth/auth0", class: "btn btn-primary large" %>
+  </div>
+<% end %>
+
+<hr class="divider">
+
+<div class="features-section">
+  <h3>🚀 SSO機能について</h3>
+  <p>このアプリでは以下のSSO動作を実装しています：</p>
+  <ul class="feature-list">
+    <li><strong>自動リダイレクト:</strong> 既にAuth0でログイン済みの場合、ホームページから自動的にダッシュボードにリダイレクト</li>
+    <li><strong>ログイン状態の保持:</strong> セッションベースで認証状態を管理</li>
+    <li><strong>サイレント認証:</strong> Auth0のセッションが有効な場合、ログインボタンクリック時に自動的に認証完了</li>
+    <li><strong>セキュアなログアウト:</strong> Rails + Auth0の両方からログアウト</li>
+  </ul>
+</div>
+
+<div class="tech-stack">
+  <h4>🛠️ 技術スタック</h4>
+  <div class="tech-badges">
+    <span class="badge">Ruby <%= RUBY_VERSION %></span>
+    <span class="badge">Rails <%= Rails.version %></span>
+    <span class="badge">Auth0 OpenID Connect</span>
+    <span class="badge">SQLite3</span>
+    <span class="badge">Importmap + Stimulus</span>
+  </div>
+</div>

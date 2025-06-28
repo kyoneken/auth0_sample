@@ -1,0 +1,12 @@
+<h1>認証エラー</h1>
+
+<div class="error">
+  <h3>認証に失敗しました</h3>
+  <% if @error_msg %>
+    <p><strong>エラー:</strong> <%= @error_msg %></p>
+  <% end %>
+  <p>認証プロセス中に問題が発生しました。もう一度お試しください。</p>
+</div>
+
+<%= link_to "ホームに戻る", root_path, class: "btn" %>
+<%= link_to "再度ログインを試す", "/auth/auth0", class: "btn" %>

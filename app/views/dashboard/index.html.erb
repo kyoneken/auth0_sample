@@ -32,10 +32,54 @@
 </div>
 
 <div class="session-info">
-  <h4>🔒 セッション情報</h4>
-  <p><strong>認証時刻:</strong> <%= Time.current.strftime("%Y年%m月%d日 %H:%M:%S") %></p>
-  <p><strong>認証方式:</strong> OpenID Connect</p>
-  <p><strong>セッションサイズ:</strong> 最適化済み（クッキーサイズ制限対応）</p>
+  <h4>🔒 セッション & スコープ情報</h4>
+  <p><strong>認証時刻:</strong> <%= Time.now.strftime("%Y年%m月%d日 %H:%M:%S") %></p>
+  <p><strong>認証方式:</strong> OpenID Connect + JWT</p>
+  <p><strong>付与されたスコープ:</strong></p>
+  <ul>
+    <% user_scopes.each do |scope| %>
+      <li><code><%= scope %></code></li>
+    <% end %>
+  </ul>
+  <p><strong>トークン有効期限:</strong> 
+    <% if token_expired? %>
+      <span style="color: #e53e3e;">期限切れ</span>
+    <% else %>
+      <%= DateTime.parse(token_info[:expires_at])&.strftime("%Y年%m月%d日 %H:%M:%S") %>
+    <% end %>
+  </p>
+</div>
+
+<div class="authorization-demo">
+  <h4>🛡️ 認可デモ</h4>
+  <p><strong>ダッシュボードアクセス:</strong> 
+    <% if has_scope?('read:dashboard') %>
+      <span style="color: #48bb78;">✅ 許可</span>
+    <% else %>
+      <span style="color: #e53e3e;">❌ 拒否</span>
+    <% end %>
+  </p>
+  <p><strong>プロフィール読み取り:</strong> 
+    <% if has_scope?('read:profile') %>
+      <span style="color: #48bb78;">✅ 許可</span>
+    <% else %>
+      <span style="color: #e53e3e;">❌ 拒否</span>
+    <% end %>
+  </p>
+  <p><strong>ユーザー情報の参照:</strong> 
+    <% if has_scope?('read:user') %>
+      <span style="color: #48bb78;">✅ 許可</span>
+    <% else %>
+      <span style="color: #e53e3e;">❌ 拒否</span>
+    <% end %>
+  </p>
+  <p><strong>ユーザー情報の更新:</strong> 
+    <% if has_scope?('write:user') %>
+      <span style="color: #48bb78;">✅ 許可</span>
+    <% else %>
+      <span style="color: #e53e3e;">❌ 拒否</span>
+    <% end %>
+  </p>
 </div>
 
 <div class="action-buttons">
@@ -43,26 +87,13 @@
   <%= link_to "🚪 ログアウト", logout_path, class: "btn btn-danger" %>
 </div>
 
-<% if Rails.env.development? && session[:auth_detailed] %>
-<details class="technical-details" style="margin-top: 30px;">
-  <summary>🔧 技術的詳細 (開発環境のみ表示)</summary>
-  <div class="code-block">
-    <pre><%= JSON.pretty_generate(JSON.parse(session[:auth_detailed])) %></pre>
-  </div>
-</details>
-<% else %>
-<div class="technical-details" style="margin-top: 30px;">
-  <p><strong>💡 セッション最適化:</strong> 本番環境では詳細情報はセキュリティのため表示されません。</p>
-</div>
-<% end %>
-
 <div class="rails8-info">
-  <h4>🆕 Rails 8.0 + セッション管理について</h4>
-  <p>このアプリでは<strong>クッキーサイズ制限</strong>に対応した最適化を実装しています。</p>
+  <h4>🆕 Rails 8.0 + Auth0 API 統合について</h4>
+  <p>この実装では<strong>スコープベースの認可</strong>を実装しています。</p>
   <ul>
-    <li><strong>最小化:</strong> セッションには必要最小限の情報のみ保存</li>
-    <li><strong>セキュリティ:</strong> 機密情報はサーバーサイドで管理</li>
-    <li><strong>パフォーマンス:</strong> 軽量なセッションでレスポンス向上</li>
-    <li><strong>スケーラビリティ:</strong> データベースセッション対応</li>
+    <li><strong>JWTトークン:</strong> Auth0からJWTアクセストークンを取得</li>
+    <li><strong>スコープ検証:</strong> 各機能に必要なスコープをチェック</li>
+    <li><strong>トークン期限:</strong> 自動的にトークン期限をチェック</li>
+    <li><strong>セキュリティ:</strong> 最小権限の原則に基づく認可</li>
   </ul>
 </div>

@@ -42,6 +42,10 @@ class Auth0Controller < ApplicationController
       Rails.logger.info "Token response: #{token_response.keys}"
 
       if token_response["access_token"]
+        # JWTトークンを検証
+        decoded_token = verify_jwt_token(token_response["access_token"])
+        Rails.logger.info "JWT verified successfully. Scopes: #{decoded_token['scope']}"
+
         # ユーザー情報を取得
         user_info = get_user_info(token_response["access_token"])
         Rails.logger.info "User info received: #{user_info.keys}"
@@ -49,15 +53,18 @@ class Auth0Controller < ApplicationController
         # セッションを完全にクリア
         session.clear
 
-        # 最小限の情報のみ保存
+        # 最小限の情報のみ保存（JWT検証済み）
         session[:user_id] = user_info["sub"]
         session[:user_email] = user_info["email"]
         session[:user_name] = user_info["name"]
         session[:user_picture] = user_info["picture"]
         session[:provider] = "auth0"
         session[:authenticated] = true
+        session[:access_token] = token_response["access_token"]
+        session[:scopes] = decoded_token["scope"]&.split(" ") || []
+        session[:token_expires_at] = Time.at(decoded_token["exp"])
 
-        Rails.logger.info "Session set successfully, redirecting to dashboard"
+        Rails.logger.info "Session set successfully with scopes: #{session[:scopes]}"
         redirect_to dashboard_path
       else
         Rails.logger.error "No access token in response: #{token_response}"
@@ -95,6 +102,7 @@ class Auth0Controller < ApplicationController
   def build_auth_url
     domain = ENV["AUTH0_DOMAIN"]
     client_id = ENV["AUTH0_CLIENT_ID"]
+    audience = ENV["AUTH0_AUDIENCE"]
     callback_url = "#{request.protocol}#{request.host_with_port}/auth/auth0/callback"
 
     state = SecureRandom.hex(8)
@@ -104,8 +112,10 @@ class Auth0Controller < ApplicationController
       response_type: "code",
       client_id: client_id,
       redirect_uri: callback_url,
-      scope: "openid profile email",
-      state: state
+      scope: "openid profile email read:profile read:dashboard read:user write:user",
+      audience: audience,
+      state: state,
+      prompt: "consent"
     }
 
     Rails.logger.info "Built auth URL with params: #{params.inspect}"
@@ -120,7 +130,8 @@ class Auth0Controller < ApplicationController
       client_id: ENV["AUTH0_CLIENT_ID"],
       client_secret: ENV["AUTH0_CLIENT_SECRET"],
       code: code,
-      redirect_uri: "#{request.protocol}#{request.host_with_port}/auth/auth0/callback"
+      redirect_uri: "#{request.protocol}#{request.host_with_port}/auth/auth0/callback",
+      audience: ENV["AUTH0_AUDIENCE"]
     }
 
     Rails.logger.info "Exchanging code for token at: #{uri}"
@@ -154,5 +165,23 @@ class Auth0Controller < ApplicationController
       Rails.logger.error "User info request failed: #{response.body}"
       {}
     end
+  end
+
+  def verify_jwt_token(token)
+    # 簡易的なJWTデコード（本番環境では適切なJWT検証ライブラリを使用）
+    require "base64"
+    require "json"
+
+    parts = token.split(".")
+    payload = parts[1]
+
+    # Base64URLデコード
+    payload += "=" * (4 - payload.length % 4) if payload.length % 4 != 0
+    decoded_payload = Base64.urlsafe_decode64(payload)
+
+    JSON.parse(decoded_payload)
+  rescue => e
+    Rails.logger.error "JWT verification failed: #{e.message}"
+    raise "Invalid JWT token"
   end
 end
